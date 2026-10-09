@@ -15,7 +15,9 @@ The site is a single, non-scrolling landing screen inside a terracotta frame (`s
 
 To add a section: add it to `sections`, create a page in `src/pages` that wraps its content in `PageShell`, and add a route in `src/App.tsx`.
 
-Hosting needs a single-page-app fallback (serve `index.html` for unknown paths) so links like `/about` work on refresh.
+Resources live in `src/content/resources.ts`. Guides are PDFs grouped by issue (parenting, grief, relationships, anxiety, depression). Put a file in `public/resources/` and set its `file` path to turn on the download. Articles are writing; each one is listed on the resources page and published at `/resources/<slug>`.
+
+The site deploys to GitHub Pages on every push to `main` (`.github/workflows/pages.yml`). The built site is also copied to `404.html` so routes like `/about` still load when refreshed.
 
 ## Getting started
 

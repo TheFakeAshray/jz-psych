@@ -11,19 +11,28 @@ import { Container } from './Container'
 type PageShellProps = {
   section: Section
   children: ReactNode
+  backTo?: string
+  backLabel?: string
+  label?: string
+  title?: string
 }
 
-export function PageShell({ section, children }: PageShellProps) {
+export function PageShell({ section, children, backTo = '/', backLabel = 'Back', label, title }: PageShellProps) {
+  const shellRef = useRef<HTMLDivElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const heading = title ?? section.prompt
+  const eyebrow = label ?? section.title
 
   useEffect(() => {
     setLastSection(section.slug)
-    document.title = `${section.title} · JZ Psych`
+    document.title = `${title ?? section.title} · JZ Psych`
+    shellRef.current?.scrollTo({ top: 0 })
     headingRef.current?.focus({ preventScroll: true })
-  }, [section.slug, section.title])
+  }, [section.slug, section.title, title])
 
   return (
     <Shell
+      ref={shellRef}
       layoutId={`section-${section.slug}`}
       layoutCrossfade={false}
       transition={morph}
@@ -37,15 +46,15 @@ export function PageShell({ section, children }: PageShellProps) {
         exit={{ opacity: 0, transition: { duration: 0.12 } }}
       >
         <Content>
-          <BackLink to="/">
+          <BackLink to={backTo}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M19 12H5M11 18l-6-6 6-6" />
             </svg>
-            Back
+            {backLabel}
           </BackLink>
-          <Label>{section.title}</Label>
+          <Label>{eyebrow}</Label>
           <Title ref={headingRef} tabIndex={-1}>
-            {section.prompt}
+            {heading}
           </Title>
           {children}
         </Content>

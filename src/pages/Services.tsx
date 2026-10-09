@@ -35,7 +35,7 @@ const List = styled.div`
 const Card = styled.article`
   padding: ${({ theme }) => theme.space[6]};
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ theme }) => theme.colors.surface};
+  background: ${({ theme }) => theme.colors.tones.sand.card};
 `
 
 const CardTitle = styled.h2`

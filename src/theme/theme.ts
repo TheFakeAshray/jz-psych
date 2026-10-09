@@ -29,6 +29,9 @@ const palette = {
   white: '#ffffff',
 }
 
+// A lighter tint of a page background, for cards sitting on that page.
+const lift = (color: string) => `color-mix(in srgb, ${color}, ${palette.white} 38%)`
+
 export const theme = {
   colors: {
     background: palette.sand[50],
@@ -43,10 +46,10 @@ export const theme = {
     onPrimary: palette.white,
     accent: palette.sage[500],
     tones: {
-      blush: { bg: palette.terracotta[100], fg: palette.ink[900] },
-      sand: { bg: palette.sand[200], fg: palette.ink[900] },
-      sage: { bg: palette.sage[300], fg: palette.ink[900] },
-      clay: { bg: palette.terracotta[700], fg: palette.white },
+      blush: { bg: palette.terracotta[100], fg: palette.ink[900], card: lift(palette.terracotta[100]) },
+      sand: { bg: palette.sand[200], fg: palette.ink[900], card: lift(palette.sand[200]) },
+      sage: { bg: palette.sage[300], fg: palette.ink[900], card: lift(palette.sage[300]) },
+      clay: { bg: palette.terracotta[700], fg: palette.white, card: lift(palette.terracotta[700]) },
     },
     palette,
   },
