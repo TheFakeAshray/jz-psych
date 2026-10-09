@@ -1,1 +1,1 @@
-export const siteName = 'Jacinta Zakhari Psychology'
+export const siteName = 'Jacinta Eve Psychology'

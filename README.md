@@ -1,6 +1,6 @@
-# Jacinta Zakhari Psychology
+# Jacinta Eve Psychology
 
-Mobile-first website for Jacinta Zakhari Psychology. The project and package name stay `jz-psych`.
+Mobile-first website for Jacinta Eve Psychology. The project and package name stay `jz-psych`.
 
 ## Stack
 
