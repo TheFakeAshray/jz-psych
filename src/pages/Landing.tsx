@@ -15,25 +15,11 @@ const container: Variants = {
 const item: Variants = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease } },
-  exit: { opacity: 0, transition: { duration: 0.15 } },
 }
 
 const cardIn: Variants = {
   hidden: { opacity: 0, y: 24, scale: 0.96 },
   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease } },
-  exit: { opacity: 0, transition: { duration: 0.2 } },
-}
-
-// The card morphing back from its page must stay opaque, and its text waits until the
-// morph settles so it isn't shown stretched mid-animation.
-const cardMorphingBack: Variants = {
-  exit: { opacity: 0, transition: { duration: 0.2 } },
-}
-
-const contentAfterMorph: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { delay: 0.4, duration: 0.3 } },
-  exit: { opacity: 0, transition: { duration: 0.15 } },
 }
 
 const floatDelay = [0, 0.8, 1.6, 0.4]
@@ -56,17 +42,18 @@ export function Landing() {
   const [returningFrom] = useState(getLastSection)
   const reduceMotion = useReducedMotion()
   const floatOrigin = useRef(performance.now())
+  const intro = !returningFrom
 
   useEffect(() => {
     document.title = siteName
   }, [])
 
   return (
-    <Wrapper variants={container} initial="hidden" animate="visible" exit="exit">
-      <Brand variants={item}>{siteName}</Brand>
+    <Wrapper variants={intro ? container : undefined} initial={intro ? 'hidden' : false} animate={intro ? 'visible' : undefined} exit="exit">
+      <Brand variants={intro ? item : undefined}>{siteName}</Brand>
 
       <Main>
-        <Heading variants={item}>
+        <Heading variants={intro ? item : undefined}>
           Welcome, glad you're here.
           <Muted>What brings you in today?</Muted>
         </Heading>
@@ -89,18 +76,13 @@ export function Landing() {
                   layoutId={`section-${section.slug}`}
                   layoutCrossfade={false}
                   transition={morph}
-                  variants={isMorphingBack ? cardMorphingBack : cardIn}
-                  exit={() =>
-                    section.slug === getLastSection()
-                      ? { opacity: 1, transition: { duration: 0.01 } }
-                      : { opacity: 0, transition: { duration: 0.2 } }
-                  }
+                  variants={intro && !isMorphingBack ? cardIn : undefined}
                   whileHover={{ y: -4 }}
                   whileTap={{ scale: 0.98 }}
                   style={{ borderRadius: theme.layout.cardRadius }}
                   $tone={section.tone}
                 >
-                  <CardContent variants={isMorphingBack ? contentAfterMorph : item}>
+                  <CardContent variants={intro && !isMorphingBack ? item : undefined}>
                     <Label>{section.title}</Label>
                     <Prompt>{section.prompt}</Prompt>
                     <Arrow />
@@ -112,7 +94,7 @@ export function Landing() {
         </Grid>
       </Main>
 
-      <Crisis variants={item}>
+      <Crisis variants={intro ? item : undefined}>
         In crisis? Call Lifeline <a href="tel:131114">13 11 14</a> or <a href="tel:000">000</a>.
       </Crisis>
     </Wrapper>
