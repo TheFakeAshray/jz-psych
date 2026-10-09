@@ -21,9 +21,11 @@ function App() {
             <HeroTitle>A calm, supportive space to talk.</HeroTitle>
             <Lead>Placeholder intro copy for the clinic — who you help and how.</Lead>
             <Actions>
-              <Button href="#contact">Get in touch</Button>
-              <Button href="#services" $variant="secondary">
-                Our services
+              <Button asChild>
+                <a href="#contact">Get in touch</a>
+              </Button>
+              <Button asChild variant="secondary">
+                <a href="#services">Our services</a>
               </Button>
             </Actions>
           </Container>

@@ -1,8 +1,23 @@
+import type { ComponentProps } from 'react'
+import { Slot } from 'radix-ui'
 import styled, { css } from 'styled-components'
 
 type Variant = 'primary' | 'secondary'
 
-export const Button = styled.a<{ $variant?: Variant }>`
+type ButtonProps = ComponentProps<'button'> & {
+  variant?: Variant
+  asChild?: boolean
+}
+
+export function Button({ variant = 'primary', asChild = false, type, ...props }: ButtonProps) {
+  if (asChild) {
+    return <StyledButton as={Slot.Root} $variant={variant} {...props} />
+  }
+
+  return <StyledButton type={type ?? 'button'} $variant={variant} {...props} />
+}
+
+const StyledButton = styled.button<{ $variant: Variant }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -17,13 +32,18 @@ export const Button = styled.a<{ $variant?: Variant }>`
     background-color 150ms ease,
     border-color 150ms ease;
 
-  ${({ theme, $variant = 'primary' }) =>
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  ${({ theme, $variant }) =>
     $variant === 'primary'
       ? css`
           background: ${theme.colors.primary};
           color: ${theme.colors.onPrimary};
 
-          &:hover {
+          &:hover:not(:disabled) {
             background: ${theme.colors.primaryHover};
           }
         `
@@ -32,7 +52,7 @@ export const Button = styled.a<{ $variant?: Variant }>`
           color: ${theme.colors.primary};
           border-color: ${theme.colors.primary};
 
-          &:hover {
+          &:hover:not(:disabled) {
             background: ${theme.colors.primarySoft};
           }
         `}

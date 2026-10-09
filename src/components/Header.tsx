@@ -24,7 +24,9 @@ export function Header() {
               {link.label}
             </NavLink>
           ))}
-          <Button href="#contact">Get in touch</Button>
+          <Button asChild>
+            <a href="#contact">Get in touch</a>
+          </Button>
         </DesktopNav>
 
         <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -57,8 +59,10 @@ export function Header() {
                   </MobileNavLink>
                 ))}
               </MobileNav>
-              <Button href="#contact" onClick={() => setOpen(false)}>
-                Get in touch
+              <Button asChild>
+                <a href="#contact" onClick={() => setOpen(false)}>
+                  Get in touch
+                </a>
               </Button>
             </Drawer>
           </Dialog.Portal>
