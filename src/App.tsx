@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
-import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, MotionConfig, motion, useReducedMotion, type TargetAndTransition } from 'motion/react'
 import styled from 'styled-components'
 import { Frame } from './components/Frame'
 import { TransitionCutContext } from './components/PageShell'
@@ -84,10 +84,11 @@ function App() {
             data-section-switch=""
             initial={slide ? { y: '-100%' } : false}
             animate={{ y: '0%', zIndex: 2 }}
-            exit={() =>
-              holdRef.current
-                ? { y: '100%', zIndex: 0, pointerEvents: 'none' as const, transition: sectionSlide }
-                : { y: '0%', opacity: 1, zIndex: 0, transition: { duration: 0.01 } }
+            exit={
+              (() =>
+                holdRef.current
+                  ? { y: '100%', opacity: 1, zIndex: 0, pointerEvents: 'none' as const, transition: sectionSlide }
+                  : { y: '0%', opacity: 1, zIndex: 0, pointerEvents: 'auto' as const, transition: { duration: 0.01 } }) as unknown as TargetAndTransition
             }
             transition={sectionSlide}
           >
