@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import styled from 'styled-components'
+import { paperTexture } from '../theme/paper'
 
 export function Frame({ children }: { children: ReactNode }) {
   return (
@@ -25,6 +26,7 @@ const Screen = styled.div`
   height: 100%;
   overflow: hidden;
   border-radius: ${({ theme }) => theme.layout.screenRadius}px;
-  background: ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.background};
   isolation: isolate;
+  ${paperTexture}
 `

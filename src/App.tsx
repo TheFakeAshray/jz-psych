@@ -8,7 +8,7 @@ import { Services } from './pages/Services'
 import { ResourcesLayout } from './pages/ResourcesLayout'
 import { Resources } from './pages/Resources'
 import { Article } from './pages/Article'
-import { Booking } from './pages/Booking'
+import { BookingLayout } from './pages/Booking'
 
 // Articles live under /resources/:slug and should keep the resources frame mounted,
 // so the key is the top-level section rather than the full path.
@@ -35,7 +35,12 @@ function App() {
               <Route index element={<Resources />} />
               <Route path=":slug" element={<Article />} />
             </Route>
-            <Route path="/booking" element={<Booking />} />
+            <Route path="/booking" element={<BookingLayout />}>
+              <Route index element={null} />
+              <Route path="existing" element={null} />
+              <Route path="new" element={null} />
+              <Route path="*" element={<Navigate to="/booking" replace />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AnimatePresence>
