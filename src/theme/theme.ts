@@ -42,6 +42,12 @@ export const theme = {
     primarySoft: palette.terracotta[100],
     onPrimary: palette.white,
     accent: palette.sage[500],
+    tones: {
+      blush: { bg: palette.terracotta[100], fg: palette.ink[900] },
+      sand: { bg: palette.sand[200], fg: palette.ink[900] },
+      sage: { bg: palette.sage[300], fg: palette.ink[900] },
+      clay: { bg: palette.terracotta[700], fg: palette.white },
+    },
     palette,
   },
   fonts: {
@@ -78,7 +84,11 @@ export const theme = {
   },
   layout: {
     maxWidth: '1120px',
-    headerHeight: '64px',
+    frame: '10px',
+    frameLg: '16px',
+    screenRadius: 14,
+    // Numeric so Motion can correct border radius during layout animations.
+    cardRadius: 20,
   },
   // Mobile first: style for small screens by default, then use these as min-width queries.
   media: {

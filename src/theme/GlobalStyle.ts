@@ -11,11 +11,14 @@ export const GlobalStyle = createGlobalStyle`
 
   html {
     -webkit-text-size-adjust: 100%;
-    scroll-behavior: smooth;
+  }
+
+  html, body, #root {
+    height: 100%;
   }
 
   body {
-    min-height: 100dvh;
+    overflow: hidden;
     background: ${({ theme }) => theme.colors.background};
     color: ${({ theme }) => theme.colors.text};
     font-family: ${({ theme }) => theme.fonts.body};
@@ -49,10 +52,6 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
