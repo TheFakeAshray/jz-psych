@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { motion, type Variants } from 'motion/react'
 import styled from 'styled-components'
 import { getLastSection } from '../content/lastSection'
+import { siteName } from '../content/site'
 import { sections, type Tone } from '../content/sections'
 import { ease, morph } from '../theme/motion'
 import { theme } from '../theme/theme'
@@ -39,12 +40,12 @@ export function Landing() {
   const [returningFrom] = useState(getLastSection)
 
   useEffect(() => {
-    document.title = 'JZ Psych'
+    document.title = siteName
   }, [])
 
   return (
     <Wrapper variants={container} initial="hidden" animate="visible" exit="exit">
-      <Brand variants={item}>JZ Psych</Brand>
+      <Brand variants={item}>{siteName}</Brand>
 
       <Main>
         <Heading variants={item}>

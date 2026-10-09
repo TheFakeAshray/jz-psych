@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { motion } from 'motion/react'
 import styled from 'styled-components'
 import { setLastSection } from '../content/lastSection'
+import { siteName } from '../content/site'
 import type { Section, Tone } from '../content/sections'
 import { ease, morph } from '../theme/motion'
 import { theme } from '../theme/theme'
@@ -25,14 +26,13 @@ export function PageShell({ section, children, backTo = '/', backLabel = 'Back',
 
   useEffect(() => {
     setLastSection(section.slug)
-    document.title = `${title ?? section.title} · JZ Psych`
+    document.title = `${title ?? section.title} · ${siteName}`
     shellRef.current?.scrollTo({ top: 0 })
     headingRef.current?.focus({ preventScroll: true })
   }, [section.slug, section.title, title])
 
   return (
     <Shell
-      ref={shellRef}
       layoutId={`section-${section.slug}`}
       layoutCrossfade={false}
       transition={morph}
@@ -40,6 +40,7 @@ export function PageShell({ section, children, backTo = '/', backLabel = 'Back',
       style={{ borderRadius: theme.layout.screenRadius + 1 }}
       $tone={section.tone}
     >
+      <Scroller ref={shellRef}>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0, transition: { delay: 0.25, duration: 0.5, ease } }}
@@ -59,6 +60,7 @@ export function PageShell({ section, children, backTo = '/', backLabel = 'Back',
           {children}
         </Content>
       </motion.div>
+      </Scroller>
     </Shell>
   )
 }
@@ -69,18 +71,28 @@ const Shell = styled(motion.div)<{ $tone: Tone }>`
   position: absolute;
   inset: -1px;
   z-index: 1;
-  overflow-y: auto;
-  scrollbar-width: thin;
   background: ${({ theme, $tone }) => theme.colors.tones[$tone].bg};
   color: ${({ theme, $tone }) => theme.colors.tones[$tone].fg};
 `
 
+const Scroller = styled.div`
+  position: absolute;
+  inset: 0 0 5.25rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+
+  ${({ theme }) => theme.media.side} {
+    inset: 0;
+  }
+`
+
 const Content = styled(Container)`
   max-width: 760px;
-  padding-block: ${({ theme }) => theme.space[6]} ${({ theme }) => theme.space[16]};
+  padding-block: ${({ theme }) => theme.space[6]} ${({ theme }) => theme.space[12]};
 
   ${({ theme }) => theme.media.md} {
-    padding-block: ${({ theme }) => theme.space[8]} ${({ theme }) => theme.space[16]};
+    padding-top: ${({ theme }) => theme.space[8]};
+    padding-bottom: ${({ theme }) => theme.space[16]};
   }
 `
 

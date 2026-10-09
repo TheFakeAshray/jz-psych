@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { AnimatePresence, MotionConfig } from 'motion/react'
 import { Frame } from './components/Frame'
+import { SectionNav } from './components/SectionNav'
 import { Landing } from './pages/Landing'
 import { About } from './pages/About'
 import { Services } from './pages/Services'
@@ -22,6 +23,9 @@ function App() {
   return (
     <MotionConfig reducedMotion="user">
       <Frame>
+        <AnimatePresence>
+          {frameKey(location.pathname) !== '/' && <SectionNav key="sections" />}
+        </AnimatePresence>
         <AnimatePresence>
           <Routes location={location} key={frameKey(location.pathname)}>
             <Route path="/" element={<Landing />} />

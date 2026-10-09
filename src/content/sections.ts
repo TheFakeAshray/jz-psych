@@ -11,7 +11,7 @@ export type Section = {
 }
 
 export const sections: Section[] = [
-  { slug: 'about', path: '/about', title: 'About', prompt: 'Who’s behind JZ Psych?', tone: 'blush' },
+  { slug: 'about', path: '/about', title: 'About', prompt: 'Who’s Jacinta Zakhari?', tone: 'blush' },
   { slug: 'services', path: '/services', title: 'Services', prompt: 'How can you help me?', tone: 'sand' },
   { slug: 'resources', path: '/resources', title: 'Resources', prompt: 'Guides & articles', tone: 'sage' },
   { slug: 'booking', path: '/booking', title: 'Booking', prompt: 'I’d like to book a session', tone: 'clay' },

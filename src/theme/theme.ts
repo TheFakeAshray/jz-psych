@@ -98,6 +98,8 @@ export const theme = {
     sm: '@media (min-width: 640px)',
     md: '@media (min-width: 768px)',
     lg: '@media (min-width: 1024px)',
+    // The 760px column leaves a clear left margin beside the section boxes.
+    side: '@media (min-width: 1200px)',
   },
 } as const
 

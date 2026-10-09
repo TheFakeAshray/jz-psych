@@ -1,6 +1,6 @@
-# JZ Psych
+# Jacinta Zakhari Psychology
 
-Mobile-first website for the JZ Psych clinic.
+Mobile-first website for Jacinta Zakhari Psychology. The project and package name stay `jz-psych`.
 
 ## Stack
 
