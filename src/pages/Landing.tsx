@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { Link } from 'react-router'
-import { motion, type Variants } from 'motion/react'
+import { cubicBezier, motion, useAnimationFrame, useMotionValue, useReducedMotion, type Variants } from 'motion/react'
 import styled from 'styled-components'
 import { getLastSection } from '../content/lastSection'
 import { siteName } from '../content/site'
@@ -36,8 +36,26 @@ const contentAfterMorph: Variants = {
   exit: { opacity: 0, transition: { duration: 0.15 } },
 }
 
+const floatDelay = [0, 0.8, 1.6, 0.4]
+const floatDuration = [5.6, 6.4, 5.2, 6.8]
+const floatAmplitude = 8
+const floatEase = cubicBezier(0.42, 0, 0.58, 1)
+
+// Same curve as y: [0, -8, 0] with easeInOut. Driven from one clock so a hovered
+// card can freeze, then catch the phase it would have had if it never paused.
+function floatY(elapsedMs: number, durationMs: number, delayMs: number) {
+  const elapsed = elapsedMs - delayMs
+  if (elapsed <= 0) return 0
+
+  const cycle = (elapsed % durationMs) / durationMs
+  if (cycle <= 0.5) return -floatAmplitude * floatEase(cycle / 0.5)
+  return -floatAmplitude * (1 - floatEase((cycle - 0.5) / 0.5))
+}
+
 export function Landing() {
   const [returningFrom] = useState(getLastSection)
+  const reduceMotion = useReducedMotion()
+  const floatOrigin = useRef(performance.now())
 
   useEffect(() => {
     document.title = siteName
@@ -49,33 +67,40 @@ export function Landing() {
 
       <Main>
         <Heading variants={item}>
-          Hi there.
-          <Muted>What brings you here today?</Muted>
+          Welcome, glad you're here.
+          <Muted>What brings you in today?</Muted>
         </Heading>
 
         <Grid>
-          {sections.map((section) => {
+          {sections.map((section, index) => {
             const isMorphingBack = section.slug === returningFrom
 
             return (
-              <PromptCard
+              <FloatingCard
                 key={section.slug}
-                to={section.path}
-                layoutId={`section-${section.slug}`}
-                layoutCrossfade={false}
-                transition={morph}
-                variants={isMorphingBack ? cardMorphingBack : cardIn}
-                whileHover={{ y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                style={{ borderRadius: theme.layout.cardRadius }}
-                $tone={section.tone}
+                duration={floatDuration[index]}
+                delay={(isMorphingBack ? 0.7 : 0.85) + floatDelay[index]}
+                still={!!reduceMotion}
+                origin={floatOrigin}
               >
-                <CardContent variants={isMorphingBack ? contentAfterMorph : item}>
-                  <Label>{section.title}</Label>
-                  <Prompt>{section.prompt}</Prompt>
-                  <Arrow />
-                </CardContent>
-              </PromptCard>
+                <PromptCard
+                  to={section.path}
+                  layoutId={`section-${section.slug}`}
+                  layoutCrossfade={false}
+                  transition={morph}
+                  variants={isMorphingBack ? cardMorphingBack : cardIn}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  style={{ borderRadius: theme.layout.cardRadius }}
+                  $tone={section.tone}
+                >
+                  <CardContent variants={isMorphingBack ? contentAfterMorph : item}>
+                    <Label>{section.title}</Label>
+                    <Prompt>{section.prompt}</Prompt>
+                    <Arrow />
+                  </CardContent>
+                </PromptCard>
+              </FloatingCard>
             )
           })}
         </Grid>
@@ -85,6 +110,70 @@ export function Landing() {
         In crisis? Call Lifeline <a href="tel:131114">13 11 14</a> or <a href="tel:000">000</a>.
       </Crisis>
     </Wrapper>
+  )
+}
+
+function FloatingCard({
+  duration,
+  delay,
+  still,
+  origin,
+  children,
+}: {
+  duration: number
+  delay: number
+  still: boolean
+  origin: RefObject<number>
+  children: ReactNode
+}) {
+  const y = useMotionValue(0)
+  const paused = useRef(false)
+  const catchingUp = useRef(false)
+  const config = useRef({ duration, delay, still })
+  config.current = { duration, delay, still }
+
+  useAnimationFrame(
+    useCallback((_timestamp, delta) => {
+      const { duration: durationSec, delay: delaySec, still: holdStill } = config.current
+      if (holdStill) {
+        if (y.get() !== 0) y.set(0)
+        return
+      }
+
+      const live = floatY(performance.now() - origin.current, durationSec * 1000, delaySec * 1000)
+      if (paused.current) return
+
+      if (catchingUp.current) {
+        const next = y.get() + (live - y.get()) * (1 - Math.exp(-(delta || 16) / 130))
+        if (Math.abs(next - live) < 0.1) {
+          y.set(live)
+          catchingUp.current = false
+        } else {
+          y.set(next)
+        }
+        return
+      }
+
+      y.set(live)
+    }, [origin, y]),
+  )
+
+  return (
+    <Float
+      style={{ y }}
+      onMouseEnter={() => {
+        if (config.current.still) return
+        paused.current = true
+        catchingUp.current = false
+      }}
+      onMouseLeave={() => {
+        if (!paused.current) return
+        paused.current = false
+        catchingUp.current = true
+      }}
+    >
+      {children}
+    </Float>
   )
 }
 
@@ -124,7 +213,7 @@ const Main = styled.main`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: ${({ theme }) => theme.space[8]};
+  gap: 2.75rem;
   width: 100%;
   max-width: ${({ theme }) => theme.layout.maxWidth};
   margin-inline: auto;
@@ -137,6 +226,11 @@ const Heading = styled(motion.h1)`
 const Muted = styled.span`
   display: block;
   color: ${({ theme }) => theme.colors.primary};
+`
+
+const Float = styled(motion.div)`
+  display: flex;
+  min-width: 0;
 `
 
 const Grid = styled.div`
@@ -152,6 +246,7 @@ const Grid = styled.div`
 
 const PromptCard = styled(MotionLink)<{ $tone: Tone }>`
   display: flex;
+  flex: 1;
   min-height: clamp(132px, 22dvh, 200px);
   padding: ${({ theme }) => theme.space[4]};
   background: ${({ theme, $tone }) => theme.colors.tones[$tone].bg};
