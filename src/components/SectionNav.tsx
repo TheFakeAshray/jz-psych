@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router'
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import styled from 'styled-components'
 import { sections, type Tone } from '../content/sections'
 import { ease } from '../theme/motion'
@@ -19,13 +19,22 @@ export function SectionNav() {
       exit={{ opacity: 0, transition: { duration: 0.15 } }}
     >
       <List aria-label="Other sections">
-        {others.map((section) => (
-          <Item key={section.slug}>
-            <SectionLink to={section.path} $tone={section.tone}>
-              {section.title}
-            </SectionLink>
-          </Item>
-        ))}
+        <AnimatePresence initial={false} mode="popLayout">
+          {others.map((section) => (
+            <Item
+              key={section.slug}
+              layout
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{ duration: 0.35, ease }}
+            >
+              <SectionLink to={section.path} $tone={section.tone}>
+                {section.title}
+              </SectionLink>
+            </Item>
+          ))}
+        </AnimatePresence>
       </List>
     </Rail>
   )
@@ -68,7 +77,7 @@ const List = styled.ul`
   }
 `
 
-const Item = styled.li`
+const Item = styled(motion.li)`
   display: flex;
   min-width: 0;
 `
