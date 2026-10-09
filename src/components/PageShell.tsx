@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { motion } from 'motion/react'
 import styled from 'styled-components'
+import { setLastSection } from '../content/lastSection'
 import type { Section, Tone } from '../content/sections'
 import { ease, morph } from '../theme/motion'
 import { Container } from './Container'
@@ -15,13 +16,15 @@ export function PageShell({ section, children }: PageShellProps) {
   const headingRef = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
+    setLastSection(section.slug)
     document.title = `${section.title} · JZ Psych`
     headingRef.current?.focus({ preventScroll: true })
-  }, [section.title])
+  }, [section.slug, section.title])
 
   return (
     <Shell
       layoutId={`section-${section.slug}`}
+      layoutCrossfade={false}
       transition={morph}
       exit={{ opacity: 0, transition: { duration: 0.3, ease } }}
       style={{ borderRadius: 0 }}

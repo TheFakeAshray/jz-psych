@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { motion, type Variants } from 'motion/react'
 import styled from 'styled-components'
+import { getLastSection } from '../content/lastSection'
 import { sections, type Tone } from '../content/sections'
 import { ease, morph } from '../theme/motion'
 import { theme } from '../theme/theme'
-
-// The staggered intro only plays on first load; returning from a page uses the card morph instead.
-let hasPlayedIntro = false
 
 const container: Variants = {
   visible: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
@@ -19,21 +17,28 @@ const item: Variants = {
   exit: { opacity: 0, transition: { duration: 0.15 } },
 }
 
-const cardIntro: Variants = {
+const cardIn: Variants = {
   hidden: { opacity: 0, y: 24, scale: 0.96 },
   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease } },
   exit: { opacity: 0, transition: { duration: 0.2 } },
 }
 
-const cardReturn: Variants = {
+// The card morphing back from its page must stay opaque, and its text waits until the
+// morph settles so it isn't shown stretched mid-animation.
+const cardMorphingBack: Variants = {
   exit: { opacity: 0, transition: { duration: 0.2 } },
 }
 
+const contentAfterMorph: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { delay: 0.4, duration: 0.3 } },
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+}
+
 export function Landing() {
-  const [playIntro] = useState(() => !hasPlayedIntro)
+  const [returningFrom] = useState(getLastSection)
 
   useEffect(() => {
-    hasPlayedIntro = true
     document.title = 'JZ Psych'
   }, [])
 
@@ -48,25 +53,30 @@ export function Landing() {
         </Heading>
 
         <Grid>
-          {sections.map((section) => (
-            <PromptCard
-              key={section.slug}
-              to={section.path}
-              layoutId={`section-${section.slug}`}
-              transition={morph}
-              variants={playIntro ? cardIntro : cardReturn}
-              whileHover={{ y: -4 }}
-              whileTap={{ scale: 0.98 }}
-              style={{ borderRadius: theme.layout.cardRadius }}
-              $tone={section.tone}
-            >
-              <CardContent variants={item}>
-                <Label>{section.title}</Label>
-                <Prompt>{section.prompt}</Prompt>
-                <Arrow />
-              </CardContent>
-            </PromptCard>
-          ))}
+          {sections.map((section) => {
+            const isMorphingBack = section.slug === returningFrom
+
+            return (
+              <PromptCard
+                key={section.slug}
+                to={section.path}
+                layoutId={`section-${section.slug}`}
+                layoutCrossfade={false}
+                transition={morph}
+                variants={isMorphingBack ? cardMorphingBack : cardIn}
+                whileHover={{ y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                style={{ borderRadius: theme.layout.cardRadius }}
+                $tone={section.tone}
+              >
+                <CardContent variants={isMorphingBack ? contentAfterMorph : item}>
+                  <Label>{section.title}</Label>
+                  <Prompt>{section.prompt}</Prompt>
+                  <Arrow />
+                </CardContent>
+              </PromptCard>
+            )
+          })}
         </Grid>
       </Main>
 
