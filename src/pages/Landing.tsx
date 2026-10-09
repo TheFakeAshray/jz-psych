@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObjec
 import { Link } from 'react-router'
 import { cubicBezier, motion, useAnimationFrame, useMotionValue, useReducedMotion, type Variants } from 'motion/react'
 import styled from 'styled-components'
-import { getLastSection } from '../content/lastSection'
+import { getLastSection, setLastSection } from '../content/lastSection'
 import { siteName } from '../content/site'
 import { sections, type Tone } from '../content/sections'
 import { ease, morph } from '../theme/motion'
@@ -85,10 +85,16 @@ export function Landing() {
               >
                 <PromptCard
                   to={section.path}
+                  onClick={() => setLastSection(section.slug)}
                   layoutId={`section-${section.slug}`}
                   layoutCrossfade={false}
                   transition={morph}
                   variants={isMorphingBack ? cardMorphingBack : cardIn}
+                  exit={() =>
+                    section.slug === getLastSection()
+                      ? { opacity: 1, transition: { duration: 0.01 } }
+                      : { opacity: 0, transition: { duration: 0.2 } }
+                  }
                   whileHover={{ y: -4 }}
                   whileTap={{ scale: 0.98 }}
                   style={{ borderRadius: theme.layout.cardRadius }}

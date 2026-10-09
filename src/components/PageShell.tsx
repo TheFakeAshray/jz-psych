@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, animate, motion, useMotionTemplate, useMotionValue, useReducedMotion } from 'motion/react'
 import styled from 'styled-components'
@@ -24,22 +24,23 @@ type PageShellProps = {
 }
 
 const slideVariants = {
-  enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', zIndex: 1 }),
-  center: { x: '0%', zIndex: 1 },
+  enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0, zIndex: 1 }),
+  center: { x: '0%', opacity: 1, zIndex: 1 },
   exit: (dir: number) => ({
     x: dir > 0 ? '-100%' : '100%',
+    opacity: 0,
     zIndex: 0,
     pointerEvents: 'none' as const,
   }),
 }
 
-const fadeVariants = {
-  enter: { opacity: 0 },
-  center: { opacity: 1 },
-  exit: { opacity: 0 },
-}
-
 const slideTransition = { duration: 0.75, ease }
+// Content waits 0.25s, then fades for 0.5s. Back stays quiet until that settles.
+const pageEntranceMs = 750
+
+// Set when a navigation cuts an in-flight transition, so the page that lands
+// shows its text immediately instead of fading in over an empty shell.
+export const TransitionCutContext = createContext(false)
 
 export function PageShell({
   section,
@@ -54,11 +55,33 @@ export function PageShell({
   const shellRef = useRef<HTMLDivElement>(null)
   const grainShift = useMotionValue(0)
   const grainPosition = useMotionTemplate`${grainShift}px 0px`
-  const previousSlide = useRef(slideKey)
+  const grainSeen = useRef(slideKey)
+  const grainAnim = useRef<{ stop: () => void } | null>(null)
   const reduceMotion = useReducedMotion()
+  const cut = useContext(TransitionCutContext)
   const heading = title ?? section.prompt
   const eyebrow = label ?? section.title
   const sliding = slideKey !== undefined
+  const busyUntil = useRef(0)
+  const slideBook = useRef({ key: slideKey, skip: false, generation: 0 })
+  const [, setSlideClock] = useState(0)
+  if (sliding && slideBook.current.key !== slideKey) {
+    const skip = reduceMotion !== true && performance.now() < busyUntil.current
+    if (reduceMotion !== true) busyUntil.current = performance.now() + slideTransition.duration * 1000
+    slideBook.current = {
+      key: slideKey,
+      skip,
+      generation: slideBook.current.generation + (skip ? 1 : 0),
+    }
+  }
+  const { skip: skipSlide, generation: slideGeneration } = slideBook.current
+  const entranceKey = sliding ? `slide:${slideKey}` : `page:${section.slug}`
+  const [entrance, setEntrance] = useState(entranceKey)
+  const [backReady, setBackReady] = useState(false)
+  if (entrance !== entranceKey) {
+    setEntrance(entranceKey)
+    setBackReady(false)
+  }
 
   useEffect(() => {
     setLastSection(section.slug)
@@ -70,14 +93,48 @@ export function PageShell({
     const headingEl = scroller?.querySelector('h1')
     if (headingEl instanceof HTMLElement) headingEl.focus({ preventScroll: true })
 
-    if (!sliding || reduceMotion || previousSlide.current === slideKey) return
-    previousSlide.current = slideKey
+    if (!sliding || reduceMotion || grainSeen.current === slideKey) return
+    grainSeen.current = slideKey
+    grainAnim.current?.stop()
+    if (slideBook.current.skip) return
     const distance = shellRef.current?.clientWidth ?? 0
-    animate(grainShift, grainShift.get() + (slideDirection > 0 ? -distance : distance), slideTransition)
+    grainAnim.current = animate(grainShift, grainShift.get() + (slideDirection > 0 ? -distance : distance), slideTransition)
   }, [section.slug, section.title, title, slideKey, sliding, reduceMotion, slideDirection, grainShift])
 
+  useEffect(() => {
+    if (reduceMotion || (sliding && skipSlide)) {
+      setBackReady(true)
+      return
+    }
+    const wait = sliding ? slideTransition.duration * 1000 : cut ? 200 : pageEntranceMs
+    const timeout = window.setTimeout(() => setBackReady(true), wait)
+    return () => window.clearTimeout(timeout)
+  }, [entrance, reduceMotion, sliding, skipSlide, cut])
+
+  useEffect(() => {
+    if (!sliding) return
+    const timeout = window.setTimeout(() => {
+      const panels = [...(shellRef.current?.querySelectorAll('[data-slide-key]') ?? [])]
+      const visible = panels.some((el) => {
+        const box = el.getBoundingClientRect()
+        return Number.parseFloat(getComputedStyle(el).opacity) > 0.5 && box.left < window.innerWidth - 8 && box.right > 8
+      })
+      if (panels.length < 2 && visible) return
+      slideBook.current = { ...slideBook.current, skip: true, generation: slideBook.current.generation + 1 }
+      setSlideClock((tick) => tick + 1)
+    }, 1200)
+    return () => window.clearTimeout(timeout)
+  }, [slideKey, sliding])
+
   const body = (
-    <PageBody backTo={backTo} backLabel={backLabel} eyebrow={eyebrow} heading={heading} clearNav={sliding}>
+    <PageBody
+      backTo={backTo}
+      backLabel={backLabel}
+      backReady={backReady}
+      eyebrow={eyebrow}
+      heading={heading}
+      clearNav={sliding}
+    >
       {children}
     </PageBody>
   )
@@ -87,7 +144,6 @@ export function PageShell({
       layoutId={`section-${section.slug}`}
       layoutCrossfade={false}
       transition={morph}
-      exit={{ opacity: 0, transition: { duration: 0.3, ease } }}
       style={{ borderRadius: theme.layout.screenRadius + 1 }}
       $tone={section.tone}
     >
@@ -98,21 +154,19 @@ export function PageShell({
               {body}
             </SlidePanel>
           ) : (
-            <AnimatePresence initial={false} custom={slideDirection}>
+            <AnimatePresence key={slideGeneration} initial={false} custom={slideDirection}>
               <SlidePanel
                 key={slideKey}
                 data-slide-key={slideKey}
                 custom={slideDirection}
                 variants={slideVariants}
-                initial="enter"
+                initial={skipSlide ? false : 'enter'}
                 animate="center"
                 exit="exit"
                 transition={slideTransition}
                 $tone={section.tone}
               >
-                <Fade variants={fadeVariants} transition={slideTransition}>
-                  {body}
-                </Fade>
+                {body}
               </SlidePanel>
             </AnimatePresence>
           )}
@@ -120,9 +174,8 @@ export function PageShell({
       ) : (
         <Scroller ref={shellRef}>
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0, transition: { delay: 0.25, duration: 0.5, ease } }}
-            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            initial={cut ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0, transition: cut ? { duration: 0.2, ease } : { delay: 0.25, duration: 0.5, ease } }}
           >
             {body}
           </motion.div>
@@ -135,6 +188,7 @@ export function PageShell({
 function PageBody({
   backTo,
   backLabel,
+  backReady,
   eyebrow,
   heading,
   clearNav,
@@ -142,6 +196,7 @@ function PageBody({
 }: {
   backTo: string
   backLabel: string
+  backReady: boolean
   eyebrow: string
   heading: string
   clearNav: boolean
@@ -149,7 +204,14 @@ function PageBody({
 }) {
   return (
     <Content $clearNav={clearNav}>
-      <BackLink to={backTo}>
+      <BackLink
+        to={backTo}
+        aria-disabled={backReady ? undefined : true}
+        tabIndex={backReady ? undefined : -1}
+        onClick={(event) => {
+          if (!backReady) event.preventDefault()
+        }}
+      >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M19 12H5M11 18l-6-6 6-6" />
         </svg>
@@ -180,8 +242,6 @@ const SlideStage = styled(motion.div)<{ $tone: Tone }>`
   background-color: ${({ theme, $tone }) => theme.colors.tones[$tone].bg};
   ${paperTexture}
 `
-
-const Fade = styled(motion.div)``
 
 const SlidePanel = styled(motion.div)<{ $tone: Tone }>`
   position: absolute;
