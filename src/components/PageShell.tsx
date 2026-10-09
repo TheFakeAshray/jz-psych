@@ -5,6 +5,7 @@ import styled from 'styled-components'
 import { setLastSection } from '../content/lastSection'
 import type { Section, Tone } from '../content/sections'
 import { ease, morph } from '../theme/motion'
+import { theme } from '../theme/theme'
 import { Container } from './Container'
 
 type PageShellProps = {
@@ -27,7 +28,7 @@ export function PageShell({ section, children }: PageShellProps) {
       layoutCrossfade={false}
       transition={morph}
       exit={{ opacity: 0, transition: { duration: 0.3, ease } }}
-      style={{ borderRadius: 0 }}
+      style={{ borderRadius: theme.layout.screenRadius + 1 }}
       $tone={section.tone}
     >
       <motion.div
@@ -53,9 +54,11 @@ export function PageShell({ section, children }: PageShellProps) {
   )
 }
 
+// Bleeds 1px past the frame so the frame's clip, not the shell's own antialiased edge,
+// forms the visible corner; otherwise a light hairline shows at the rounded corners.
 const Shell = styled(motion.div)<{ $tone: Tone }>`
   position: absolute;
-  inset: 0;
+  inset: -1px;
   z-index: 1;
   overflow-y: auto;
   scrollbar-width: thin;
