@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { cubicBezier, motion, useAnimationFrame, useMotionValue, useReducedMotion, type Variants } from 'motion/react'
-import styled from 'styled-components'
+import { motion, useAnimationFrame, useReducedMotion, type Variants } from 'motion/react'
+import styled, { css } from 'styled-components'
+import aboutSvg from '../assets/about.svg?raw'
+import resourcesSvg from '../assets/resources.svg?raw'
+import bookingSvg from '../assets/booking.svg?raw'
+import servicesSvg from '../assets/services.svg?raw'
+import { arrowNudge, Drawing } from '../components/Drawing'
+import { FloatingCard } from '../components/FloatingCard'
 import { getLastSection, setLastSection } from '../content/lastSection'
 import { siteName } from '../content/site'
 import { sections, type Tone } from '../content/sections'
@@ -24,18 +30,12 @@ const cardIn: Variants = {
 
 const floatDelay = [0, 0.8, 1.6, 0.4]
 const floatDuration = [5.6, 6.4, 5.2, 6.8]
-const floatAmplitude = 8
-const floatEase = cubicBezier(0.42, 0, 0.58, 1)
 
-// Same curve as y: [0, -8, 0] with easeInOut. Driven from one clock so a hovered
-// card can freeze, then catch the phase it would have had if it never paused.
-function floatY(elapsedMs: number, durationMs: number, delayMs: number) {
-  const elapsed = elapsedMs - delayMs
-  if (elapsed <= 0) return 0
-
-  const cycle = (elapsed % durationMs) / durationMs
-  if (cycle <= 0.5) return -floatAmplitude * floatEase(cycle / 0.5)
-  return -floatAmplitude * (1 - floatEase((cycle - 0.5) / 0.5))
+const cardDrawings: Partial<Record<string, string>> = {
+  about: aboutSvg,
+  resources: resourcesSvg,
+  services: servicesSvg,
+  booking: bookingSvg,
 }
 
 export function Landing() {
@@ -43,6 +43,7 @@ export function Landing() {
   const reduceMotion = useReducedMotion()
   const floatOrigin = useRef(performance.now())
   const intro = !returningFrom
+  const drawnSections = sections.filter((section) => cardDrawings[section.slug])
 
   useEffect(() => {
     document.title = siteName
@@ -53,14 +54,19 @@ export function Landing() {
       <Brand variants={intro ? item : undefined}>{siteName}</Brand>
 
       <Main>
-        <Heading variants={intro ? item : undefined}>
-          Welcome, glad you're here.
-          <Muted>What brings you in today?</Muted>
-        </Heading>
+        <HeadingRow>
+          <Heading variants={intro ? item : undefined}>
+            Welcome,
+            <Muted>What brings you in today?</Muted>
+          </Heading>
+          {/* <RollingCard still={!!reduceMotion} variants={intro ? item : undefined} /> */}
+        </HeadingRow>
 
         <Grid>
           {sections.map((section, index) => {
             const isMorphingBack = section.slug === returningFrom
+            const drawing = cardDrawings[section.slug]
+            const order = drawing ? drawnSections.findIndex((item) => item.slug === section.slug) : undefined
 
             return (
               <FloatingCard
@@ -82,10 +88,13 @@ export function Landing() {
                   style={{ borderRadius: theme.layout.cardRadius }}
                   $tone={section.tone}
                 >
+                  {drawing && (
+                    <CardDrawing svg={drawing} order={order} count={drawnSections.length} $card={section.slug} />
+                  )}
                   <CardContent variants={intro && !isMorphingBack ? item : undefined}>
                     <Label>{section.title}</Label>
                     <Prompt>{section.prompt}</Prompt>
-                    <Arrow />
+                    <Arrow order={order} count={drawnSections.length} />
                   </CardContent>
                 </PromptCard>
               </FloatingCard>
@@ -101,73 +110,24 @@ export function Landing() {
   )
 }
 
-function FloatingCard({
-  duration,
-  delay,
-  still,
-  origin,
-  children,
-}: {
-  duration: number
-  delay: number
-  still: boolean
-  origin: RefObject<number>
-  children: ReactNode
-}) {
-  const y = useMotionValue(0)
-  const paused = useRef(false)
-  const catchingUp = useRef(false)
-  const config = useRef({ duration, delay, still })
-  config.current = { duration, delay, still }
+function Arrow({ order, count }: { order?: number; count: number }) {
+  const reduceMotion = useReducedMotion()
+  const icon = useRef<SVGSVGElement>(null)
+  const config = useRef({ order, count, still: false })
+  config.current = { order, count, still: reduceMotion === true }
 
   useAnimationFrame(
-    useCallback((_timestamp, delta) => {
-      const { duration: durationSec, delay: delaySec, still: holdStill } = config.current
-      if (holdStill) {
-        if (y.get() !== 0) y.set(0)
-        return
-      }
-
-      const live = floatY(performance.now() - origin.current, durationSec * 1000, delaySec * 1000)
-      if (paused.current) return
-
-      if (catchingUp.current) {
-        const next = y.get() + (live - y.get()) * (1 - Math.exp(-(delta || 16) / 130))
-        if (Math.abs(next - live) < 0.1) {
-          y.set(live)
-          catchingUp.current = false
-        } else {
-          y.set(next)
-        }
-        return
-      }
-
-      y.set(live)
-    }, [origin, y]),
+    useCallback(() => {
+      const node = icon.current
+      if (!node) return
+      const { order: card, count: cards, still } = config.current
+      const nudge = still || card === undefined ? 0 : arrowNudge(card, cards)
+      node.style.transform = nudge ? `translateX(${nudge * 8}px)` : ''
+    }, []),
   )
 
   return (
-    <Float
-      style={{ y }}
-      onMouseEnter={() => {
-        if (config.current.still) return
-        paused.current = true
-        catchingUp.current = false
-      }}
-      onMouseLeave={() => {
-        if (!paused.current) return
-        paused.current = false
-        catchingUp.current = true
-      }}
-    >
-      {children}
-    </Float>
-  )
-}
-
-function Arrow() {
-  return (
-    <ArrowIcon width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <ArrowIcon ref={icon} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M5 12h14M13 6l6 6-6 6" />
     </ArrowIcon>
   )
@@ -207,6 +167,15 @@ const Main = styled.main`
   margin-inline: auto;
 `
 
+const HeadingRow = styled.div`
+  ${({ theme }) => theme.media.lg} {
+    display: flex;
+    align-items: center;
+    gap: ${({ theme }) => theme.space[8]};
+    padding-right: ${({ theme }) => theme.space[8]};
+  }
+`
+
 const Heading = styled(motion.h1)`
   font-size: ${({ theme }) => theme.fontSizes['3xl']};
 `
@@ -214,11 +183,6 @@ const Heading = styled(motion.h1)`
 const Muted = styled.span`
   display: block;
   color: ${({ theme }) => theme.colors.primary};
-`
-
-const Float = styled(motion.div)`
-  display: flex;
-  min-width: 0;
 `
 
 const Grid = styled.div`
@@ -232,9 +196,25 @@ const Grid = styled.div`
   }
 `
 
+const CardDrawing = styled(Drawing)<{ $card: string }>`
+  mix-blend-mode: overlay;
+  width: 58%;
+  height: 62%;
+  left: 0;
+  bottom: -1rem;
+
+  ${({ $card }) =>
+    $card === 'booking' &&
+    css`
+      opacity: 0.4;
+    `}
+`
+
 const PromptCard = styled(MotionLink)<{ $tone: Tone }>`
+  position: relative;
   display: flex;
   flex: 1;
+  overflow: hidden;
   min-height: clamp(132px, 22dvh, 200px);
   padding: ${({ theme }) => theme.space[4]};
   background: ${({ theme, $tone }) => theme.colors.tones[$tone].bg};
@@ -248,6 +228,8 @@ const PromptCard = styled(MotionLink)<{ $tone: Tone }>`
 `
 
 const CardContent = styled(motion.div)`
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   width: 100%;
