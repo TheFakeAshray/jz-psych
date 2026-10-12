@@ -20,8 +20,14 @@ export function drawingTurn(order: number, count: number, now = performance.now(
   const cards = Math.max(count, 1)
   const stride = cards === 1 ? activeSeconds : activeSeconds - undrawSeconds - leadSeconds
   const loop = cards * stride
-  let local = ((now - startedAt) / 1000) % loop - order * stride
-  if (local < 0) local += loop
+  const elapsed = ((now - startedAt) / 1000) % loop
+  let local = elapsed - order * stride
+  // The last card's wipe overlaps the first card's next draw. That tail only exists after one full loop,
+  // so a reload starts on the first card with the others hidden.
+  if (local < 0) {
+    if (now - startedAt < loop * 1000) return null
+    local += loop
+  }
   if (local >= activeSeconds) return null
   return local / activeSeconds
 }
