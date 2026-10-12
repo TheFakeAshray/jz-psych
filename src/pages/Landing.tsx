@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { motion, useAnimationFrame, useReducedMotion, type Variants } from 'motion/react'
 import styled, { css } from 'styled-components'
+import aboutSvg from '../assets/about.svg?raw'
+import resourcesSvg from '../assets/resources.svg?raw'
+import bookingSvg from '../assets/booking.svg?raw'
 import servicesSvg from '../assets/services.svg?raw'
 import { arrowNudge, Drawing } from '../components/Drawing'
 import { FloatingCard } from '../components/FloatingCard'
@@ -29,7 +32,10 @@ const floatDelay = [0, 0.8, 1.6, 0.4]
 const floatDuration = [5.6, 6.4, 5.2, 6.8]
 
 const cardDrawings: Partial<Record<string, string>> = {
+  about: aboutSvg,
   services: servicesSvg,
+  resources: resourcesSvg,
+  booking: bookingSvg,
 }
 
 export function Landing() {
